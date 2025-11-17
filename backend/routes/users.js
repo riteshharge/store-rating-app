@@ -34,7 +34,7 @@ router.use(validatePagination);
 ------------------------------------------------------------------- */
 router.post(
   "/createUser",
-  createUserValidation, // PDF-based validation
+  createUserValidation, // validation
   handleValidationErrors,
   validateUniqueEmail("user"), // ensure email not registered
   validateRole, // ensure role is valid

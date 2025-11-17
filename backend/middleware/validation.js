@@ -50,7 +50,7 @@ const validateQueryParams = (req, res, next) => {
 
 /* ------------------------------------------------------------------
    RATING VALIDATION
-   (PDF: rating must be 1–5)
+   rating must be 1–5
 ------------------------------------------------------------------- */
 const validateRating = (req, res, next) => {
   const { rating } = req.body;
@@ -165,7 +165,7 @@ const validateUserExists = async (req, res, next) => {
 };
 
 /* ------------------------------------------------------------------
-   PASSWORD STRENGTH VALIDATION (PDF: 8–16, 1 uppercase, 1 special)
+   PASSWORD STRENGTH VALIDATION ( 8–16, 1 uppercase, 1 special)
 ------------------------------------------------------------------- */
 const validatePasswordStrength = (req, res, next) => {
   const { password } = req.body;
@@ -185,7 +185,7 @@ const validatePasswordStrength = (req, res, next) => {
 };
 
 /* ------------------------------------------------------------------
-   NAME LENGTH VALIDATION (PDF: MIN **20** MAX 60)
+   NAME LENGTH VALIDATION ( MIN **20** MAX 60)
 ------------------------------------------------------------------- */
 const validateNameLength = (req, res, next) => {
   const { name } = req.body;
@@ -200,7 +200,7 @@ const validateNameLength = (req, res, next) => {
 };
 
 /* ------------------------------------------------------------------
-   ADDRESS VALIDATION (PDF: MAX 400)
+   ADDRESS VALIDATION ( MAX 400)
 ------------------------------------------------------------------- */
 const validateAddressLength = (req, res, next) => {
   const { address } = req.body;

@@ -4,7 +4,7 @@ const { body } = require("express-validator");
 
 /**
  * USER NAME VALIDATOR
- * Assignment Rule: Min 20 chars, Max 60 chars
+ * Rule: Min 20 chars, Max 60 chars
  */
 const userNameValidator = body("name")
   .trim()
@@ -29,7 +29,7 @@ const emailValidator = body("email")
 
 /**
  * ADDRESS VALIDATOR
- * Assignment Rule: Max 400 chars
+ * Rule: Max 400 chars
  */
 const addressValidator = body("address")
   .trim()
@@ -38,7 +38,7 @@ const addressValidator = body("address")
 
 /**
  * PASSWORD VALIDATOR
- * Assignment Rule:
+ *  Rule:
  *  - 8–16 characters
  *  - MUST include ≥1 uppercase letter
  *  - MUST include ≥1 special character
