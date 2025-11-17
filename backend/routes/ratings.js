@@ -3,46 +3,54 @@ const router = express.Router();
 
 const ratingController = require("../controllers/ratingController");
 const { authenticate, authorize } = require("../middleware/auth");
+
 const {
   handleValidationErrors,
-  validateRating,
-  validateStoreOwnership,
   validatePagination,
   sanitizeInput,
 } = require("../middleware/validation");
 
 const { ratingValidation } = require("../utils/validators");
 
-// Common middleware
-router.use(authenticate);
+/* ------------------------------------------------------------------
+   COMMON MIDDLEWARE
+------------------------------------------------------------------- */
+router.use(authenticate); // All rating routes require login
 router.use(sanitizeInput);
 router.use(validatePagination);
 
-// Submit or update rating
+/* ------------------------------------------------------------------
+   USER: CREATE OR UPDATE RATING
+------------------------------------------------------------------- */
 router.post(
   "/submitRating",
   authorize("user"),
-  ratingValidation,
+  ratingValidation, // rating + store_id validation
   handleValidationErrors,
-  validateRating,
-  validateStoreOwnership,
   ratingController.submitRating
 );
 
-// Get logged-in user's ratings
+/* ------------------------------------------------------------------
+   USER: GET OWN RATINGS
+------------------------------------------------------------------- */
 router.get(
   "/getUserRating",
   authorize("user"),
   ratingController.getUserRatings
 );
 
-// Get a specific store along with user's rating
+/* ------------------------------------------------------------------
+   GET STORE + USER RATING (all roles allowed)
+------------------------------------------------------------------- */
 router.get(
   "/store/rating/:storeId",
   authorize("user", "store_owner", "admin"),
   ratingController.getStoreWithUserRating
 );
 
+/* ------------------------------------------------------------------
+   USER: DELETE RATING
+------------------------------------------------------------------- */
 router.delete(
   "/deleteRating/:ratingId",
   authorize("user"),

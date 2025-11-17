@@ -3,6 +3,7 @@ const router = express.Router();
 
 const userController = require("../controllers/userController");
 const { authenticate, authorize } = require("../middleware/auth");
+
 const {
   handleValidationErrors,
   validateQueryParams,
@@ -15,38 +16,49 @@ const {
 
 const { createUserValidation } = require("../utils/validators");
 
-// Only admins should manage users
+/* ------------------------------------------------------------------
+   ONLY ADMIN CAN ACCESS ALL USER MANAGEMENT ROUTES
+------------------------------------------------------------------- */
 router.use(authenticate);
 router.use(authorize("admin"));
 
-// Common middleware
+/* ------------------------------------------------------------------
+   COMMON MIDDLEWARE
+------------------------------------------------------------------- */
 router.use(sanitizeInput);
 router.use(validateQueryParams);
 router.use(validatePagination);
 
-// Create new user
+/* ------------------------------------------------------------------
+   CREATE NEW USER (Admin can create: user, admin, store_owner)
+------------------------------------------------------------------- */
 router.post(
   "/createUser",
-  createUserValidation,
+  createUserValidation, // PDF-based validation
   handleValidationErrors,
-  validateUniqueEmail("user"),
-  validateRole,
+  validateUniqueEmail("user"), // ensure email not registered
+  validateRole, // ensure role is valid
   userController.createUser
 );
 
-// List all users
+/* ------------------------------------------------------------------
+   LIST ALL USERS
+------------------------------------------------------------------- */
 router.get("/getAllUsers", userController.getAllUsers);
 
-// Dashboard stats
+/* ------------------------------------------------------------------
+   DASHBOARD STATS (total users, owners, ratings etc.)
+------------------------------------------------------------------- */
 router.get("/dashboard/stats", userController.getDashboardStats);
 
-// Get specific user
+/* ------------------------------------------------------------------
+   GET USER BY ID
+------------------------------------------------------------------- */
 router.get("/getUserById/:id", validateUserExists, userController.getUserById);
 
-router.get(
-  "/role/:role",
-  authenticate,
-  authorize("admin"),
-  userController.getUsersByRole
-);
+/* ------------------------------------------------------------------
+   GET USERS BY ROLE (admin only)
+------------------------------------------------------------------- */
+router.get("/role/:role", userController.getUsersByRole);
+
 module.exports = router;

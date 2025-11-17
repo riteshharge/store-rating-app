@@ -2,7 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const storeController = require("../controllers/storeController");
+const ratingController = require("../controllers/ratingController");
+
 const { authenticate, authorize } = require("../middleware/auth");
+
 const {
   handleValidationErrors,
   validateQueryParams,
@@ -13,31 +16,43 @@ const {
 } = require("../middleware/validation");
 
 const { createStoreValidation } = require("../utils/validators");
-const ratingController = require("../controllers/ratingController");
-// Common middlewares for all routes
+
+/* ------------------------------------------------------------------
+   COMMON MIDDLEWARE
+------------------------------------------------------------------- */
 router.use(sanitizeInput);
 router.use(validateQueryParams);
 router.use(validatePagination);
 
-// Public routes
+/* ------------------------------------------------------------------
+   PUBLIC ROUTES
+------------------------------------------------------------------- */
 router.get("/getAllStores", storeController.getAllStores);
+
 router.get("/getStoreById/:id", storeController.getStoreById);
 
-// Admin: create store
+/* ------------------------------------------------------------------
+   GET ALL RATINGS FOR A STORE (public)
+------------------------------------------------------------------- */
+router.get("/:storeId/ratings", ratingController.getStoreRatings);
+
+/* ------------------------------------------------------------------
+   ADMIN: CREATE A NEW STORE
+------------------------------------------------------------------- */
 router.post(
   "/create-store",
   authenticate,
   authorize("admin"),
-  createStoreValidation,
+  createStoreValidation, // Validate name/email/address/owner_id
   handleValidationErrors,
-  validateUniqueEmail("store"),
-  validateUserExists,
+  validateUniqueEmail("store"), // store email must be unique
+  validateUserExists, // checks if owner_id exists in users table
   storeController.createStore
 );
 
-router.get("/:storeId/ratings", ratingController.getStoreRatings);
-
-// Store owner: dashboard
+/* ------------------------------------------------------------------
+   STORE OWNER DASHBOARD
+------------------------------------------------------------------- */
 router.get(
   "/owner/dashboard",
   authenticate,

@@ -14,16 +14,19 @@ const handleValidationErrors = (req, res, next) => {
       })),
     });
   }
-
   next();
 };
 
-// Validate sorting, pagination & filter values
+/* ------------------------------------------------------------------
+   QUERY PARAM VALIDATION
+------------------------------------------------------------------- */
 const validateQueryParams = (req, res, next) => {
   const { sortOrder, page, limit, ...filters } = req.query;
 
   if (sortOrder && !["asc", "desc"].includes(sortOrder.toLowerCase())) {
-    return res.status(400).json({ error: 'sortOrder must be "asc" or "desc"' });
+    return res.status(400).json({
+      error: 'sortOrder must be "asc" or "desc"',
+    });
   }
 
   if (page && (isNaN(page) || page < 1)) {
@@ -34,44 +37,49 @@ const validateQueryParams = (req, res, next) => {
     return res.status(400).json({ error: "limit must be between 1 and 100" });
   }
 
-  // Basic SQL-injection prevention for filter values
+  // Prevent SQL injection-like characters
   const blockedPattern = /[;\\'"-]/;
   for (const value of Object.values(filters)) {
     if (value && blockedPattern.test(value)) {
-      return res
-        .status(400)
-        .json({ error: "Invalid characters in filter values" });
+      return res.status(400).json({ error: "Invalid characters in filter" });
     }
   }
 
   next();
 };
 
-// Validate 1–5 rating
+/* ------------------------------------------------------------------
+   RATING VALIDATION
+   (PDF: rating must be 1–5)
+------------------------------------------------------------------- */
 const validateRating = (req, res, next) => {
   const { rating } = req.body;
 
   if (rating && (rating < 1 || rating > 5)) {
-    return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    return res.status(400).json({
+      error: "Rating must be between 1 and 5",
+    });
   }
-
   next();
 };
 
-// Validate role correctness
+/* ------------------------------------------------------------------
+   ROLE VALIDATION
+------------------------------------------------------------------- */
 const validateRole = (req, res, next) => {
   const { role } = req.body;
 
   if (role && !["admin", "user", "store_owner"].includes(role)) {
     return res.status(400).json({
-      error: "Role must be one of: admin, user, store_owner",
+      error: "Role must be admin, user, or store_owner",
     });
   }
-
   next();
 };
 
-// Validate unique email for user/store
+/* ------------------------------------------------------------------
+   UNIQUE EMAIL VALIDATION
+------------------------------------------------------------------- */
 const validateUniqueEmail = (type) => {
   return async (req, res, next) => {
     try {
@@ -102,7 +110,9 @@ const validateUniqueEmail = (type) => {
   };
 };
 
-// Validate store belongs to logged-in owner (if owner)
+/* ------------------------------------------------------------------
+   STORE OWNERSHIP VALIDATION (only used in store routes)
+------------------------------------------------------------------- */
 const validateStoreOwnership = async (req, res, next) => {
   try {
     const storeId = req.params.storeId || req.body.store_id;
@@ -118,20 +128,22 @@ const validateStoreOwnership = async (req, res, next) => {
     }
 
     if (req.user.role === "store_owner" && store.owner_id !== userId) {
-      return res.status(403).json({
-        error: "You can only access your own store",
-      });
+      return res
+        .status(403)
+        .json({ error: "You can only access your own store" });
     }
 
     req.store = store;
     next();
   } catch (err) {
-    console.error("Store ownership validation error:", err);
+    console.error("Store validation error:", err);
     res.status(500).json({ error: "Store validation failed" });
   }
 };
 
-// Validate if user exists for given ID
+/* ------------------------------------------------------------------
+   USER EXISTS VALIDATION
+------------------------------------------------------------------- */
 const validateUserExists = async (req, res, next) => {
   try {
     const userId = req.params.id || req.body.owner_id;
@@ -140,7 +152,9 @@ const validateUserExists = async (req, res, next) => {
     const User = require("../models/User");
     const user = await User.findById(userId);
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     req.targetUser = user;
     next();
@@ -150,7 +164,9 @@ const validateUserExists = async (req, res, next) => {
   }
 };
 
-// Check password strength
+/* ------------------------------------------------------------------
+   PASSWORD STRENGTH VALIDATION (PDF: 8–16, 1 uppercase, 1 special)
+------------------------------------------------------------------- */
 const validatePasswordStrength = (req, res, next) => {
   const { password } = req.body;
 
@@ -161,27 +177,31 @@ const validatePasswordStrength = (req, res, next) => {
   if (!strongPassword.test(password)) {
     return res.status(400).json({
       error:
-        "Password must be 8-16 chars, contain 1 uppercase letter & 1 special character",
+        "Password must be 8–16 chars, with 1 uppercase and 1 special character",
     });
   }
 
   next();
 };
 
-// Validate name length
+/* ------------------------------------------------------------------
+   NAME LENGTH VALIDATION (PDF: MIN **20** MAX 60)
+------------------------------------------------------------------- */
 const validateNameLength = (req, res, next) => {
   const { name } = req.body;
 
-  if (name && (name.length < 3 || name.length > 60)) {
+  if (name && (name.length < 20 || name.length > 60)) {
     return res.status(400).json({
-      error: "Name must be between 3 and 60 characters",
+      error: "Name must be between 20 and 60 characters",
     });
   }
 
   next();
 };
 
-// Validate address length
+/* ------------------------------------------------------------------
+   ADDRESS VALIDATION (PDF: MAX 400)
+------------------------------------------------------------------- */
 const validateAddressLength = (req, res, next) => {
   const { address } = req.body;
 
@@ -194,30 +214,27 @@ const validateAddressLength = (req, res, next) => {
   next();
 };
 
-// Standard input sanitizing
+/* ------------------------------------------------------------------
+   INPUT SANITIZATION
+------------------------------------------------------------------- */
 const sanitizeInput = (req, res, next) => {
-  const clean = (value) => {
-    return typeof value === "string"
-      ? value.trim().replace(/\s+/g, " ")
-      : value;
-  };
+  const clean = (val) =>
+    typeof val === "string" ? val.trim().replace(/\s+/g, " ") : val;
 
   if (req.body) {
-    Object.keys(req.body).forEach((k) => {
-      req.body[k] = clean(req.body[k]);
-    });
+    Object.keys(req.body).forEach((k) => (req.body[k] = clean(req.body[k])));
   }
 
   if (req.query) {
-    Object.keys(req.query).forEach((k) => {
-      req.query[k] = clean(req.query[k]);
-    });
+    Object.keys(req.query).forEach((k) => (req.query[k] = clean(req.query[k])));
   }
 
   next();
 };
 
-// Pagination defaults
+/* ------------------------------------------------------------------
+   PAGINATION
+------------------------------------------------------------------- */
 const validatePagination = (req, res, next) => {
   let { page = 1, limit = 10 } = req.query;
 
@@ -236,7 +253,9 @@ const validatePagination = (req, res, next) => {
   next();
 };
 
-// Prevent self-delete or self-role-change
+/* ------------------------------------------------------------------
+   PREVENT SELF DELETE
+------------------------------------------------------------------- */
 const validateSelfAction = (req, res, next) => {
   const targetId = req.params.id;
   const currentId = req.user.id;
