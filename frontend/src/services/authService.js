@@ -16,20 +16,13 @@ export const authService = {
 
   async login(email, password) {
     const response = await api.post("/auth/login", { email, password });
-
-    // Auto-save + attach token
     this.setToken(response.data.token);
-
-    // You also return user here; AuthContext will save it into localStorage
     return response.data;
   },
 
   async register(userData) {
     const response = await api.post("/auth/register", userData);
-
-    // Auto-save + attach token (if you want auto-login after registration)
     this.setToken(response.data.token);
-
     return response.data;
   },
 
@@ -38,16 +31,26 @@ export const authService = {
     return response.data;
   },
 
-  async getCurrentUser() {
+  async updateProfile(profileData) {
     const token = localStorage.getItem("token");
 
-    if (!token) return null;
+    if (!token) {
+      throw new Error("No token found");
+    }
 
-    // Ensure axios has token
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-    const response = await api.get("/auth/me");
+    const response = await api.put("/auth/update-profile", profileData);
 
+    return response.data;
+  },
+
+  async getCurrentUser() {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    const response = await api.get("/auth/me");
     return response.data;
   },
 };

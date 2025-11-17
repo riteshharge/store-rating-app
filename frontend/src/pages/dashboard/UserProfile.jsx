@@ -38,7 +38,6 @@ const UserProfile = () => {
     confirmPassword: "",
   });
 
-  // Auto clear notifications
   const autoClear = () => {
     setTimeout(() => {
       setError("");
@@ -60,7 +59,6 @@ const UserProfile = () => {
       setProfile(userResponse);
       setEditForm(userResponse);
 
-      // Load ratings ONLY for normal user
       if (userResponse.role === "user") {
         const ratingsResponse = await ratingService.getUserRatings();
         setRatings(ratingsResponse.ratings || []);
@@ -68,7 +66,6 @@ const UserProfile = () => {
         setRatings([]);
       }
     } catch (err) {
-      console.error("Error loading user data:", err);
       setError("Failed to load profile data.");
       autoClear();
     } finally {
@@ -76,17 +73,38 @@ const UserProfile = () => {
     }
   };
 
-  const handleProfileUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    setIsEditing(false);
-    setSuccess("Profile updated successfully!");
-    autoClear();
+    try {
+      const token = localStorage.getItem("token");
+      const response = await authService.updateProfile(editForm, token);
+
+      if (!response.success) {
+        setError(response.error || "Failed to update profile.");
+        autoClear();
+        return;
+      }
+
+      setProfile(editForm);
+      setIsEditing(false);
+      setSuccess("Profile updated successfully!");
+      autoClear();
+    } catch (err) {
+      setError("Failed to update profile.");
+      autoClear();
+    }
   };
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      setError("New passwords do not match.");
+      autoClear();
+      return;
+    }
 
     try {
       const response = await updatePassword({
@@ -96,12 +114,6 @@ const UserProfile = () => {
 
       if (!response?.success) {
         setError(response?.error || "Failed to update password.");
-        autoClear();
-        return;
-      }
-
-      if (passwordForm.password !== passwordForm.confirmPassword) {
-        setError("New passwords do not match.");
         autoClear();
         return;
       }
@@ -197,7 +209,6 @@ const UserProfile = () => {
         {/* SIDEBAR */}
         <div className="lg:col-span-1">
           <div className="card space-y-1">
-            {/* Profile */}
             <button
               onClick={() => setActiveTab("profile")}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg ${
@@ -210,7 +221,6 @@ const UserProfile = () => {
               <span>Profile</span>
             </button>
 
-            {/* Security */}
             <button
               onClick={() => setActiveTab("security")}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg ${
@@ -223,7 +233,6 @@ const UserProfile = () => {
               <span>Security</span>
             </button>
 
-            {/* My Activity — ONLY for normal users */}
             {isNormalUser && (
               <button
                 onClick={() => setActiveTab("activity")}
@@ -238,7 +247,6 @@ const UserProfile = () => {
               </button>
             )}
 
-            {/* Preferences */}
             <button
               onClick={() => setActiveTab("preferences")}
               className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg ${
@@ -252,12 +260,11 @@ const UserProfile = () => {
             </button>
           </div>
 
-          {/* QUICK STATS */}
+          {/* Quick Stats */}
           <div className="card mt-6">
             <h3 className="font-semibold text-gray-900 mb-3">Quick Stats</h3>
 
             <div className="space-y-3">
-              {/* Total Ratings ONLY for normal user */}
               {isNormalUser && (
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600">Total Ratings</span>
@@ -321,7 +328,6 @@ const UserProfile = () => {
                   )}
                 </div>
 
-                {/* PROFILE FORM */}
                 <form className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -450,59 +456,58 @@ const UserProfile = () => {
               </div>
             )}
 
-            {/* MY ACTIVITY — ONLY NORMAL USER */}
+            {/* MY ACTIVITY */}
             {activeTab === "activity" && isNormalUser && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">My Activity</h2>
-
-                <div className="space-y-4">
-                  {ratings.length > 0 ? (
-                    ratings.map((rating) => (
-                      <div
-                        key={rating.id}
-                        className="p-4 bg-gray-50 rounded-lg flex space-x-3"
-                      >
-                        <Store className="h-5 w-5 text-gray-400 mt-1" />
-                        <div>
-                          <h4 className="font-medium">{rating.store_name}</h4>
-
-                          <div className="flex items-center space-x-2 mt-1">
-                            {/* Stars */}
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-3 w-3 ${
-                                  star <= rating.rating
-                                    ? "text-yellow-500 fill-current"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-
-                            {/* Date */}
-                            <span className="text-sm text-gray-500">
-                              {new Date(rating.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          {rating.comment && (
-                            <p className="text-sm text-gray-700 mt-2">
-                              {rating.comment}
-                            </p>
-                          )}
-                        </div>
+              <div className="space-y-4">
+                {ratings.length > 0 ? (
+                  ratings.map((rating) => (
+                    <div
+                      key={rating.id}
+                      className="p-4 bg-gray-50 rounded-lg border shadow-sm"
+                    >
+                      {/* Store Name */}
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Store className="h-5 w-5 text-gray-400" />
+                        <h4 className="font-medium">{rating.store_name}</h4>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h4 className="text-lg font-medium">No Ratings Yet</h4>
-                      <p className="text-gray-600">
-                        Start rating stores to see your activity here.
-                      </p>
+
+                      {/* ⭐ Rating + Date */}
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className="flex items-center space-x-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`h-4 w-4 ${
+                                star <= rating.rating
+                                  ? "text-yellow-500 fill-current"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        <span className="text-sm text-gray-500">
+                          {new Date(rating.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {/* Comment */}
+                      {rating.comment && (
+                        <p className="text-sm text-gray-700">
+                          {rating.comment}
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium">No Ratings Yet</h4>
+                    <p className="text-gray-600">
+                      Start rating stores to see your activity here.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -552,8 +557,6 @@ const UserProfile = () => {
                 </div>
               </div>
             )}
-
-            {/* END MAIN CARD */}
           </div>
         </div>
       </div>

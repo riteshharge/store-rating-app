@@ -7,6 +7,8 @@ const { authenticate } = require("../middleware/auth");
 const {
   handleValidationErrors,
   validateUniqueEmail,
+  validateNameLength,
+  validateAddressLength,
   sanitizeInput,
 } = require("../middleware/validation");
 
@@ -19,16 +21,20 @@ const {
 // Sanitize all incoming fields
 router.use(sanitizeInput);
 
-// REGISTER
+/* ===========================
+   REGISTER
+=========================== */
 router.post(
   "/register",
-  registerValidation, // assignment-specific validations
+  registerValidation,
   handleValidationErrors,
-  validateUniqueEmail("user"), // prevent duplicate emails
+  validateUniqueEmail("user"),
   authController.register
 );
 
-// LOGIN
+/* ===========================
+   LOGIN
+=========================== */
 router.post(
   "/login",
   loginValidation,
@@ -36,14 +42,30 @@ router.post(
   authController.login
 );
 
-// GET CURRENT USER
+/* ===========================
+   GET CURRENT USER
+=========================== */
 router.get("/me", authenticate, authController.getMe);
 
-// UPDATE PASSWORD
+/* ===========================
+   UPDATE PROFILE  ← (NEW)
+=========================== */
+router.put(
+  "/update-profile",
+  authenticate,
+  validateNameLength,
+  validateAddressLength,
+  handleValidationErrors,
+  authController.updateProfile
+);
+
+/* ===========================
+   UPDATE PASSWORD
+=========================== */
 router.put(
   "/update-password",
   authenticate,
-  updatePasswordValidation, // includes password strength checks
+  updatePasswordValidation,
   handleValidationErrors,
   authController.updatePassword
 );

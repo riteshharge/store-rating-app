@@ -423,25 +423,26 @@ const MyRatings = () => {
             {[5, 4, 3, 2, 1].map((stars) => {
               const count = stats.distribution[stars];
               const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
+
               return (
                 <div key={stars} className="flex items-center space-x-3">
+                  {/* Left label (star number + icon) */}
                   <div className="flex items-center w-16">
                     <span className="text-sm w-4">{stars}</span>
                     <Star className="h-4 w-4 text-yellow-500" />
                   </div>
 
+                  {/* Bar — FULL WIDTH if count > 0 */}
                   <div className="flex-1 bg-gray-200 rounded-full h-3">
                     <div
                       className="bg-yellow-500 h-3 rounded-full"
-                      style={{ width: `${pct}%` }}
+                      style={{ width: count > 0 ? "100%" : "0%" }}
                     ></div>
                   </div>
 
+                  {/* Count */}
                   <div className="flex items-center w-20">
                     <span className="text-sm">{count}</span>
-                    <span className="text-sm text-gray-400">
-                      ({pct.toFixed(0)}%)
-                    </span>
                   </div>
                 </div>
               );

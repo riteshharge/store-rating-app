@@ -149,3 +149,43 @@ exports.updatePassword = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// UPDATE PROFILE
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+    const userId = req.user.id;
+
+    // Fetch current user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // If email changed → check if already taken
+    if (email && email !== user.email) {
+      const exists = await User.findByEmail(email);
+      if (exists) {
+        return res
+          .status(400)
+          .json({ error: "Email already exists for another user" });
+      }
+    }
+
+    // Perform update
+    const updatedUser = await User.updateProfile(userId, {
+      name,
+      email,
+      address,
+    });
+
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+};

@@ -133,6 +133,24 @@ class User {
     );
     return rows;
   }
+
+  static async updateProfile(id, { name, email, address }) {
+    const [rows] = await pool.execute(
+      `
+    UPDATE users
+    SET 
+      name = $1,
+      email = $2,
+      address = $3,
+      updated_at = NOW()
+    WHERE id = $4
+    RETURNING id, name, email, address, role, created_at, updated_at
+    `,
+      [name, email, address, id]
+    );
+
+    return rows[0];
+  }
 }
 
 module.exports = User;
