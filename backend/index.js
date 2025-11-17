@@ -12,20 +12,29 @@ const ratingRoutes = require("./routes/ratings");
 
 const app = express();
 
-// Middleware
+/* 
+   CORS CONFIG — auto detects dev or production
+ */
+const allowedOrigins = [
+  "https://store-rating-application-nusg.onrender.com", // FRONTEND (Render)
+];
+
+// Allow localhost only in development
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.push("http://localhost:5173");
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      const allowedOrigins = [
-        "http://localhost:5173",
-        "https://store-rating-application-nusg.onrender.com",
-        "http://localhost:5000",
-      ];
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+      if (!origin) return callback(null, true); // allow mobile/postman etc.
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+
+      console.log("❌ CORS blocked origin:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -40,52 +49,61 @@ app.use("/api/users", userRoutes);
 app.use("/api/stores", storeRoutes);
 app.use("/api/ratings", ratingRoutes);
 
-// Health check route
+/* 
+   HEALTH CHECK (RENDER requires this)
+ */
 app.get("/api/health", (req, res) => {
   res.json({
-    message: "Server is running",
+    message: "Server running",
+    environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
 });
 
+/* 
+   DB HEALTH CHECK  (fixed pg connection)
+ */
 app.get("/api/db-health", async (req, res) => {
   try {
-    const connection = await pool.getConnection();
-    await connection.query("SELECT 1"); // simple test query
-    connection.release();
+    await pool.query("SELECT 1"); // SIMPLE TEST QUERY
 
     res.json({
       db: "connected",
       timestamp: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error("❌ DB health check failed:", err.message);
-    res.status(500).json({ db: "error", error: err.message });
+  } catch (error) {
+    console.error("❌ DB health failed:", error);
+    res.status(500).json({ db: "error", error: error.message });
   }
 });
 
-// Error handling middleware
+/* 
+   ERROR HANDLERS
+ */
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong!" });
+  console.error("🔥 Server Error:", err.message);
+  res.status(500).json({ error: "Internal server error", detail: err.message });
 });
 
-// 404 handler
-app.use((req, res) => {
+// 404
+app.use("*", (req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
 
+/* 
+   START SERVER
+ */
 const PORT = process.env.PORT || 5000;
 
-// Initialize database and start server
 initializeDatabase()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`🚀 Server started on port ${PORT}`);
+      console.log("Allowed Origins:", allowedOrigins);
     });
   })
-  .catch((error) => {
-    console.error("Failed to start server:", error);
+  .catch((err) => {
+    console.error("❌ Server failed to start:", err);
     process.exit(1);
   });
 
