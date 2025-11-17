@@ -15,12 +15,14 @@ const app = express();
 /*
     CORS CONFIG — COMPLETE FIX FOR RENDER
 */
+/*
+    CORS CONFIG — COMPLETE FIX FOR RENDER
+*/
 const allowedOrigins = [
-  "https://store-rating-application-nusg.onrender.com", // FRONTEND (Render)
-  "https://store-rating-app-5p1c.onrender.com", // BACKEND Render
+  "https://store-rating-application-nusg.onrender.com",
+  "https://store-rating-app-5p1c.onrender.com",
 ];
 
-// Allow local dev frontend only when NOT in production
 if (process.env.NODE_ENV !== "production") {
   allowedOrigins.push("http://localhost:5173");
 }
@@ -28,19 +30,19 @@ if (process.env.NODE_ENV !== "production") {
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, server-side, Postman, Render health checks)
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       console.log("❌ CORS BLOCKED ORIGIN:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
+// IMPORTANT — FIX FOR RENDER
+app.options("*", cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
