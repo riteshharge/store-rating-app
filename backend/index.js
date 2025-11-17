@@ -13,10 +13,10 @@ const ratingRoutes = require("./routes/ratings");
 const app = express();
 
 /*
-    CORS CONFIG — COMPLETE FIX FOR RENDER
+    CORS CONFIG — COMPLETE FIX FOR DEPLOYMENT
 */
 /*
-    CORS CONFIG — COMPLETE FIX FOR RENDER
+    CORS CONFIG — COMPLETE FIX FOR DEPLOYMENT  
 */
 const allowedOrigins = [
   "https://store-rating-application-nusg.onrender.com",
@@ -41,7 +41,7 @@ app.use(
   })
 );
 
-// IMPORTANT — FIX FOR RENDER
+// IMPORTANT — FIX FOR DEPLOYMENT
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
